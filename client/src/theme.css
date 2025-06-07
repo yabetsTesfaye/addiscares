@@ -1,0 +1,160 @@
+/* Custom theme overrides */
+:root {
+  --bs-primary: #1a73e8;
+  --bs-primary-rgb: 26, 115, 232;
+  --bs-primary-bg-subtle: #e8f0fe;
+  --bs-primary-border-subtle: #d2e3fc;
+  --bs-primary-text-emphasis: #0a4bac;
+  --bs-btn-hover-bg: #1557b0;
+  --bs-btn-active-bg: #134ea0;
+  --bs-btn-active-border-color: #124790;
+  --bs-link-color: #1a73e8;
+  --bs-link-hover-color: #1557b0;
+  --bs-link-color-rgb: 26, 115, 232;
+  --bs-link-hover-color-rgb: 21, 87, 176;
+  
+  /* Ensure navbar doesn't use primary color */
+  --bs-navbar-color: rgba(0, 0, 0, 0.9);
+  --bs-navbar-hover-color: rgba(0, 0, 0, 0.7);
+  --bs-navbar-disabled-color: rgba(0, 0, 0, 0.3);
+  --bs-navbar-active-color: rgba(0, 0, 0, 0.9);
+  --bs-navbar-brand-color: var(--bs-navbar-color);
+  --bs-navbar-brand-hover-color: var(--bs-navbar-hover-color);
+  --bs-navbar-toggler-border-color: transparent;
+  --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280, 0, 0, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Dark mode overrides */
+[data-bs-theme='dark'] {
+  --bs-navbar-color: rgba(255, 255, 255, 0.9);
+  --bs-navbar-hover-color: rgba(255, 255, 255, 0.7);
+  --bs-navbar-disabled-color: rgba(255, 255, 255, 0.3);
+  --bs-navbar-active-color: rgba(255, 255, 255, 0.9);
+  --bs-navbar-brand-color: var(--bs-navbar-color);
+  --bs-navbar-brand-hover-color: var(--bs-navbar-hover-color);
+  --bs-navbar-toggler-border-color: transparent;
+  --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Button hover and active states */
+.btn-primary {
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: var(--bs-btn-hover-bg);
+  --bs-btn-hover-border-color: var(--bs-btn-hover-bg);
+  --bs-btn-active-bg: var(--bs-btn-active-bg);
+  --bs-btn-active-border-color: var(--bs-btn-active-border-color);
+  --bs-btn-disabled-bg: var(--bs-primary);
+  --bs-btn-disabled-border-color: var(--bs-primary);
+}
+
+/* Link colors */
+a {
+  color: var(--bs-link-color);
+}
+
+a:hover {
+  color: var(--bs-link-hover-color);
+}
+
+/* Form controls focus state */
+.form-control:focus, .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for buttons */
+.btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for form controls */
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for checkboxes and radios */
+.form-check-input:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for switches */
+.form-switch .form-check-input:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for range inputs */
+.form-range:focus {
+  &::-webkit-slider-thumb {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+  }
+  &::-moz-range-thumb {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+  }
+}
+
+/* Custom focus ring for accordion buttons */
+.accordion-button:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for pagination */
+.page-link:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for dropdowns */
+.dropdown-item:focus {
+  background-color: var(--bs-primary);
+  color: white;
+}
+
+/* Custom focus ring for nav tabs */
+.nav-tabs .nav-link:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for modal close button */
+.btn-close:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for offcanvas close button */
+.offcanvas .btn-close:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for toast close button */
+.toast .btn-close:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for list group items */
+.list-group-item-action:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for form switches */
+.form-switch .form-check-input:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%231a73e8'/%3e%3c/svg%3e");
+}
+
+/* Custom focus ring for form controls in dark mode */
+[data-bs-theme=dark] .form-control:focus, 
+[data-bs-theme=dark] .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Custom focus ring for buttons in dark mode */
+[data-bs-theme=dark] .btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}

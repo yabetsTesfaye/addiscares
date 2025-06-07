@@ -1,0 +1,692 @@
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  Navbar, Nav, Container, NavDropdown, Badge, 
+  Form, InputGroup, Button, Collapse 
+} from 'react-bootstrap';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
+import api from '../../utils/api';
+import { 
+  FaBell, FaUser, FaSignInAlt, FaUserPlus, FaBars, 
+  FaHome, FaChartLine, FaFileAlt, FaUsers, FaExclamationTriangle, 
+  FaSearch, FaSun, FaMoon, FaTimes, FaCog, FaSignOutAlt, FaGlobe
+} from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const Header = () => {
+  // Context and hooks
+  const { 
+    user, 
+    isAuthenticated, 
+    logout
+  } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const searchRef = useRef(null);
+  
+  // State management
+  const [darkMode, setDarkMode] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notificationsStateRef = useRef([]);
+
+  // Toggle dark/light theme
+  const toggleTheme = useCallback(() => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode);
+    document.documentElement.setAttribute('data-bs-theme', newDarkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  // Handle search form submission
+  const handleSearch = useCallback((e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setSearchQuery('');
+      setShowSearch(false);
+    }
+  }, [searchQuery, navigate]);
+
+  // Toggle mobile menu
+  const toggleMobileMenu = useCallback((show = null) => {
+    setShowMobileMenu(prev => show !== null ? show : !prev);
+  }, []);
+
+  // Fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) return 0;
+    
+    try {
+      const res = await api.get('/notifications/unread-count');
+      const count = res.data?.count || 0;
+      setUnreadCount(count);
+      return count;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  }, [isAuthenticated]);
+
+  // Mark all notifications as read
+  const markAllNotificationsAsRead = useCallback(async () => {
+    if (!isAuthenticated || notifications.length === 0) return;
+    
+    try {
+      await api.put('/notifications/mark-all-read');
+      setNotifications(prevNotifications => 
+        prevNotifications.map(n => ({ ...n, read: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to mark notifications as read');
+    }
+  }, [isAuthenticated, notifications]);
+
+  // Mark a single notification as read
+  const markAsRead = useCallback(async (notificationId) => {
+    try {
+      await api.put(`/notifications/${notificationId}/read`);
+      setNotifications(prevNotifications => 
+        prevNotifications.map(n => 
+          n._id === notificationId ? { ...n, read: true } : n
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const navbar = document.querySelector('.navbar');
+      const toggleButton = document.querySelector('.navbar-toggler');
+      
+      if (showMobileMenu && 
+          !navbar.contains(event.target) && 
+          !toggleButton.contains(event.target)) {
+        toggleMobileMenu(false);
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMobileMenu, toggleMobileMenu]);
+
+  // Effect for handling mark all as read
+  useEffect(() => {
+    const handleMarkAllAsRead = async () => {
+      if (!isAuthenticated) return;
+      
+      try {
+        await markAllNotificationsAsRead();
+      } catch (error) {
+        console.error('Error marking all as read:', error);
+        
+        // More detailed error message
+        let errorMessage = 'Failed to update notifications';
+        if (error.response) {
+          console.error('Error response data:', error.response.data);
+          errorMessage = error.response.data.message || errorMessage;
+        }
+        
+        toast.error(errorMessage);
+      }
+    };
+
+    // Call the function if needed
+    // handleMarkAllAsRead();
+  }, [isAuthenticated, markAllNotificationsAsRead]);
+
+  const toggleNotifications = useCallback((e) => {
+    // Check if e is an event object and has preventDefault method
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const willShow = !showNotifications;
+    setShowNotifications(willShow);
+    
+    // If opening notifications, mark them as read
+    if (willShow) {
+      // Small delay to ensure dropdown is visible when marking as read
+      setTimeout(() => {
+        markAllNotificationsAsRead();
+      }, 100);
+    }
+  }, [showNotifications, markAllNotificationsAsRead]);
+  
+  // Handle logout
+  const handleLogout = useCallback(() => {
+    logout();
+    navigate('/login');
+    toast.success('You have been logged out successfully');
+  }, [logout, navigate]);
+
+  // Notification dropdown component
+  const NotificationDropdown = () => (
+    <NavDropdown
+      show={showNotifications}
+      onToggle={toggleNotifications}
+      title={
+        <div className="position-relative">
+          <FaBell size={20} />
+          {unreadCount > 0 && (
+            <Badge 
+              pill 
+              bg="danger" 
+              className="position-absolute top-0 start-100 translate-middle"
+              style={{ fontSize: '0.6rem' }}
+            >
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </Badge>
+          )}
+        </div>
+      }
+      align="end"
+      className="notification-dropdown"
+    >
+      <NavDropdown.Header>Notifications</NavDropdown.Header>
+      {loading ? (
+        <div className="text-center p-3">
+          <div className="spinner-border spinner-border-sm" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : notifications.length > 0 ? (
+        <>
+          {notifications.map(notification => (
+            <NavDropdown.Item 
+              key={notification._id} 
+              as={Link} 
+              to={notification.link || '#'}
+              onClick={() => markAsRead(notification._id)}
+              className={!notification.read ? 'fw-bold' : ''}
+            >
+              <div className="d-flex w-100 justify-content-between">
+                <span>{notification.title}</span>
+                <small className="text-muted">
+                  {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </small>
+              </div>
+              <small className="text-muted d-block">{notification.message}</small>
+            </NavDropdown.Item>
+          ))}
+          <NavDropdown.Divider />
+          <NavDropdown.Item as={Link} to="/notifications">
+            View all notifications
+          </NavDropdown.Item>
+        </>
+      ) : (
+        <NavDropdown.ItemText className="text-muted">
+          No notifications
+        </NavDropdown.ItemText>
+      )}
+    </NavDropdown>
+  );
+
+  // Create a ref to store the fetchNotifications function
+  const fetchNotificationsRef = useRef(null);
+
+  // Fetch notifications with error handling and loading state
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      console.log('Not fetching notifications: user not authenticated');
+      return;
+    }
+    
+    console.log('Fetching notifications...');
+    try {
+      setLoading(true);
+      
+      // First get the unread count
+      const unreadRes = await api.get('/notifications/unread-count');
+      const unreadCount = unreadRes.data?.count || 0;
+      console.log('Unread count:', unreadCount);
+      
+      // Then get the notifications
+      const notificationsRes = await api.get('/notifications', {
+        params: {
+          limit: 5, // Only fetch the 5 most recent notifications
+          sort: '-createdAt',
+          populate: 'sender',
+          unreadOnly: false
+        }
+      });
+      
+      console.log('Fetched notifications:', notificationsRes.data);
+      
+      // Process notifications to ensure they have the required fields
+      const processedNotifications = (notificationsRes.data || []).map(notification => ({
+        ...notification,
+        _id: notification._id || Math.random().toString(36).substr(2, 9),
+        title: notification.title || 'New Notification',
+        message: notification.message || 'You have a new notification',
+        link: notification.link || '#',
+        read: notification.read || false,
+        createdAt: notification.createdAt || new Date().toISOString(),
+        sender: notification.sender || {
+          name: 'System',
+          _id: 'system'
+        }
+      }));
+      
+      setNotifications(processedNotifications);
+      // Update the unread count using fetchUnreadCount
+      await fetchUnreadCount();
+      
+      // If there's a custom update function, call it
+      if (user.updateUnreadCount) {
+        user.updateUnreadCount(unreadCount);
+      }
+      
+      return processedNotifications;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      
+      // Fallback to mock data in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock notifications data');
+        const mockNotifications = [{
+          _id: '1',
+          title: 'Welcome to AddisCare',
+          message: 'Thank you for signing up!',
+          read: false,
+          createdAt: new Date().toISOString(),
+          link: '/welcome'
+        }];
+        setNotifications(mockNotifications);
+        // In mock mode, we'll still set a local state for demo purposes
+        // The actual unread count will be updated by the AuthContext
+        fetchUnreadCount();
+        return mockNotifications;
+      }
+      
+      toast.error('Failed to load notifications');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
+  // Update the ref when fetchNotifications changes
+  useEffect(() => {
+    fetchNotificationsRef.current = fetchNotifications;
+  }, [fetchNotifications]);
+
+  // Mark a single notification as read
+  const handleMarkAsRead = useCallback(async (notificationId, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    try {
+      // Optimistically update the UI
+      setNotifications(prev => 
+        prev.map(n => 
+          n._id === notificationId ? { ...n, read: true } : n
+        )
+      );
+      
+      // Update unread count if the notification was unread
+      const notification = notifications.find(n => n._id === notificationId);
+      if (notification && !notification.read) {
+        await fetchUnreadCount();
+      }
+      
+      // Call the API
+      await api.patch(`/notifications/${notificationId}/read`);
+      
+      // Refresh notifications to ensure consistency
+      if (fetchNotificationsRef.current) {
+        await fetchNotificationsRef.current();
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      toast.error('Failed to update notification status');
+      
+      // Revert optimistic update on error
+      try {
+        if (fetchNotificationsRef.current) {
+          await fetchNotificationsRef.current();
+        }
+      } catch (err) {
+        console.error('Error refreshing notifications:', err);
+      }
+    }
+  }, [notifications]);
+
+  // Keep the notifications state ref updated
+  useEffect(() => {
+    notificationsStateRef.current = notifications;
+  }, [notifications]);
+
+  // Function to process notifications
+  const processNotifications = useCallback(async (notificationsData) => {
+    try {
+      // Process notifications to ensure they have the required fields
+      const processedNotifications = (notificationsData || []).map(notification => ({
+        ...notification,
+        _id: notification._id || Math.random().toString(36).substr(2, 9),
+        title: notification.title || 'New Notification',
+        message: notification.message || 'You have a new notification',
+        link: notification.link || '#',
+        read: notification.read || false,
+        createdAt: notification.createdAt || new Date().toISOString(),
+        sender: notification.sender || { name: 'System' }
+      }));
+      return processedNotifications;
+    } catch (error) {
+      console.error('Error processing notifications:', error);
+      return [];
+    }
+  }, []);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 992) { // lg breakpoint
+        setShowMobileMenu(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Set up notification polling
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('Not setting up notification polling: user not authenticated');
+      return;
+    }
+
+    console.log('Setting up notification polling...');
+    
+    // Initial fetch
+    const initialFetch = async () => {
+      try {
+        await fetchNotifications();
+      } catch (error) {
+        console.error('Initial notification fetch failed:', error);
+      }
+    };
+    
+    initialFetch();
+    
+    // Set up polling every 15 seconds
+    const interval = setInterval(() => {
+      console.log('Polling for new notifications...');
+      fetchNotifications().catch(error => {
+        console.error('Error during notification polling:', error);
+      });
+    }, 15000);
+    
+    // Clean up interval on unmount
+    return () => {
+      console.log('Cleaning up notification polling');
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, fetchNotifications]);
+
+  // Render navigation links based on user role
+  const renderNavLinks = useCallback(() => {
+    if (!user) return null;
+
+    const commonLinks = [
+      { to: '/', text: 'Home', icon: <FaHome className="me-1" /> },
+    ];
+
+    const reporterLinks = [
+      ...commonLinks,
+      { to: '/reporter/reports', text: 'My Reports', icon: <FaFileAlt className="me-1" /> },
+      { to: '/reporter/create-report', text: 'Submit Report', icon: <FaExclamationTriangle className="me-1" /> },
+    ];
+
+    const governmentLinks = [
+      ...commonLinks,
+      { to: '/government/reports', text: 'Reports', icon: <FaFileAlt className="me-1" /> },
+      { to: '/government/statistics', text: 'Analytics', icon: <FaChartLine className="me-1" /> },
+    ];
+
+    const adminLinks = [
+      ...commonLinks,
+      { to: '/admin/dashboard', text: 'Dashboard', icon: <FaTachometerAlt className="me-1" /> },
+      { to: '/admin/users', text: 'Users', icon: <FaUsers className="me-1" /> },
+      { to: '/admin/reports', text: 'Reports', icon: <FaFileAlt className="me-1" /> },
+      { to: '/admin/statistics', text: 'Analytics', icon: <FaChartLine className="me-1" /> },
+    ];
+
+    let links = [];
+    if (user.role === 'admin') {
+      links = adminLinks;
+    } else if (user.role === 'government') {
+      links = governmentLinks;
+    } else {
+      links = reporterLinks;
+    }
+
+    return (
+      <Nav className="me-auto">
+        {links.map((link, index) => (
+          <Nav.Link 
+            key={index} 
+            as={Link} 
+            to={link.to} 
+            className={`mx-1 ${location.pathname === link.to ? 'active fw-bold' : ''}`}
+          >
+            {link.icon}
+            {link.text}
+          </Nav.Link>
+        ))}
+      </Nav>
+    );
+  }, [user, location]);
+
+  // Check if current page is home
+  const isHomePage = location.pathname === '/';
+  
+  // Navbar background color - dark purple only on home page
+  const navbarBgColor = isHomePage 
+    ? (darkMode ? '#1a0a2e' : '#2d0a5a') 
+    : (darkMode ? '#212529' : '#ffffff');
+  
+  // Navbar text color - white on home page, dark/light based on theme otherwise
+  const navbarTextColor = isHomePage 
+    ? 'rgba(255, 255, 255, 0.9)' 
+    : (darkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)');
+  
+  const navbarHoverColor = isHomePage 
+    ? 'rgba(255, 255, 255, 0.7)' 
+    : (darkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)');
+  
+  const navbarActiveColor = isHomePage 
+    ? '#fff' 
+    : (darkMode ? '#fff' : 'rgba(0, 0, 0, 0.9)');
+
+  return (
+    <header className={`sticky-top ${scrolled ? 'shadow-sm' : ''}`} 
+            style={{ 
+              backgroundColor: navbarBgColor,
+              borderBottom: darkMode ? '1px solid #2c3034' : '1px solid #e9ecef',
+              transition: 'background-color 0.3s ease-in-out'
+            }}>
+      <Navbar 
+        expand="lg" 
+        className={`py-2 ${isHomePage ? 'navbar-dark' : (darkMode ? 'navbar-dark' : 'navbar-light')}`} 
+        expanded={showMobileMenu}
+        style={{
+          backgroundColor: 'transparent',
+          '--bs-navbar-color': navbarTextColor,
+          '--bs-navbar-hover-color': navbarHoverColor,
+          '--bs-navbar-active-color': navbarActiveColor
+        }}
+      >
+        <Container fluid="lg">
+          {/* Brand/Logo */}
+          <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
+            <span className="fw-bold">AddisCare</span>
+          </Navbar.Brand>
+
+          {/* Mobile menu toggle */}
+          <div className="d-flex align-items-center order-lg-2 ms-auto">
+            {/* Search toggle for mobile */}
+            <Button 
+              variant="link" 
+              className={`d-lg-none p-0 text-${darkMode ? 'light' : 'dark'} me-2 bg-transparent border-0`}
+              onClick={() => setShowSearch(!showSearch)}
+              style={{ boxShadow: 'none' }}
+            >
+              <FaSearch className="p-1" style={{ fontSize: '1.25rem' }} />
+            </Button>
+
+            {/* Theme toggle */}
+            <Button 
+              variant="link" 
+              className={`p-0 text-${darkMode ? 'light' : 'dark'} me-2 bg-transparent border-0`}
+              onClick={toggleTheme}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              style={{ boxShadow: 'none' }}
+            >
+              {darkMode ? <FaSun className="p-1" style={{ fontSize: '1.25rem' }} /> : <FaMoon className="p-1" style={{ fontSize: '1.25rem' }} />}
+            </Button>
+
+            {/* Notifications */}
+            <li className="nav-item">
+              <div className="nav-link position-relative">
+                <NotificationDropdown />
+              </div>
+            </li>
+
+            {/* User dropdown or auth buttons */}
+            {isAuthenticated ? (
+              <NavDropdown
+                title={
+                  <span className="d-inline-flex align-items-center">
+                    <FaUser className="me-1" />
+                    {user.name || 'Profile'}
+                  </span>
+                }
+                id="user-dropdown"
+                align="end"
+                className={`${darkMode ? 'text-light' : 'text-dark'}`}
+              >
+                <NavDropdown.Item as={Link} to="/profile">
+                  <FaUser className="me-2" /> Profile
+                </NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/settings">
+                  <FaCog className="me-2" /> Settings
+                </NavDropdown.Item>
+                <NavDropdown.Divider />
+                <NavDropdown.Item onClick={handleLogout}>
+                  <FaSignOutAlt className="me-2" /> Logout
+                </NavDropdown.Item>
+              </NavDropdown>
+            ) : (
+              <>
+                <Button 
+                  as={Link} 
+                  to="/login" 
+                  variant={darkMode ? 'outline-light' : 'outline-primary'}
+                  className="me-2"
+                >
+                  <FaSignInAlt className="me-1" /> Login
+                </Button>
+                <Button 
+                  as={Link} 
+                  to="/register" 
+                  variant="primary"
+                  className="d-none d-sm-inline-block"
+                >
+                  <FaUserPlus className="me-1" /> Register
+                </Button>
+              </>
+            )}
+
+          </div>
+
+          {/* Search form for desktop */}
+          <Form 
+            className={`d-none d-lg-flex ms-3 ${showSearch ? 'd-flex' : 'd-none'}`} 
+            onSubmit={handleSearch}
+            ref={searchRef}
+          >
+            <InputGroup>
+              <Form.Control
+                type="search"
+                placeholder="Search..."
+                className="border-end-0"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button 
+                variant={darkMode ? 'outline-light' : 'outline-secondary'}
+                type="submit"
+              >
+                <FaSearch />
+              </Button>
+            </InputGroup>
+          </Form>
+
+          {/* Mobile search form */}
+          <Collapse in={showSearch} className="w-100 order-3 order-lg-2">
+            <Form className="mt-2 d-lg-none" onSubmit={handleSearch}>
+              <InputGroup>
+                <Form.Control
+                  type="search"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Button 
+                  variant={darkMode ? 'outline-light' : 'outline-secondary'}
+                  type="submit"
+                >
+                  <FaSearch />
+                </Button>
+              </InputGroup>
+            </Form>
+          </Collapse>
+
+          {/* Main navigation */}
+          <Navbar.Toggle 
+            aria-controls="basic-navbar-nav" 
+            onClick={() => toggleMobileMenu(!showMobileMenu)}
+            className={`d-lg-none ${darkMode ? 'text-light' : 'text-dark'}`}
+            aria-expanded={showMobileMenu}
+          />
+          <Navbar.Collapse id="basic-navbar-nav" in={showMobileMenu} onToggle={setShowMobileMenu} onClick={(e) => e.stopPropagation()}>
+            <Nav className="me-auto">
+              {isAuthenticated ? (
+                renderNavLinks()
+              ) : (
+                <Nav.Link as={Link} to="/">
+                  <FaHome className="me-1" /> Home
+                </Nav.Link>
+              )}
+            </Nav>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
+    </header>
+  );
+};
+
+export default Header;

@@ -1,0 +1,156 @@
+import React, { memo, useCallback } from 'react';
+import { ListGroup, Button, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaCheck, FaTrash, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
+import { FiCheckCircle, FiAlertTriangle, FiAlertCircle } from 'react-icons/fi';
+import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import { useNotifications } from '../../contexts/NotificationContext';
+
+const NotificationItem = memo(({
+  notification,
+  onMarkAsRead,
+  onDelete
+}) => {
+  const handleDelete = useCallback((e) => {
+    e?.stopPropagation();
+    if (onDelete) {
+      onDelete(notification._id, e);
+    }
+  }, [notification._id, onDelete]);
+
+  const handleMarkAsRead = useCallback((e) => {
+    e?.stopPropagation();
+    if (!notification.read && onMarkAsRead) {
+      onMarkAsRead(notification._id);
+    }
+  }, [notification._id, notification.read, onMarkAsRead]);
+
+  const getNotificationIcon = useCallback(() => {
+    switch (notification.type) {
+      case 'alert':
+        return <FaExclamationTriangle className="text-warning me-2" />;
+      case 'info':
+        return <FaInfoCircle className="text-info me-2" />;
+      default:
+        return null;
+    }
+  }, [notification.type]);
+
+  const renderNotificationContent = useCallback(() => {
+    const icon = getNotificationIcon();
+    const timeAgo = formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true });
+
+    return (
+      <div className="d-flex justify-content-between w-100">
+        <div className="d-flex align-items-start flex-grow-1 overflow-hidden">
+          {icon}
+          <div className="flex-grow-1 overflow-hidden">
+            <div className="d-flex align-items-center mb-1">
+              <h6 className="mb-0 text-truncate" style={{ maxWidth: '200px' }}>
+                {notification.title}
+              </h6>
+              {!notification.read && (
+                <Badge bg="primary" className="ms-2" pill>New</Badge>
+              )}
+            </div>
+            <p className="mb-0 small text-muted text-truncate">
+              {notification.message}
+            </p>
+            <small className="text-muted">
+              {timeAgo}
+            </small>
+          </div>
+        </div>
+        <div className="d-flex flex-column">
+          <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip>Delete</Tooltip>}
+          >
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="p-0 text-muted ms-2"
+              onClick={handleDelete}
+              aria-label={`Delete notification: ${notification.title}`}
+            >
+              <FaTrash size={14} />
+            </Button>
+          </OverlayTrigger>
+          {!notification.read && (
+            <OverlayTrigger
+              placement="top"
+              overlay={<Tooltip>Mark as read</Tooltip>}
+            >
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="p-0 text-muted ms-2 mt-1"
+                onClick={handleMarkAsRead}
+                aria-label={`Mark as read: ${notification.title}`}
+              >
+                <FaCheck size={14} />
+              </Button>
+            </OverlayTrigger>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <ListGroup.Item 
+      as="li"
+      action 
+      className={`border-0 px-3 py-2 ${!notification.read ? 'bg-light' : ''}`}
+      onClick={handleMarkAsRead}
+      aria-current={!notification.read ? 'true' : 'false'}
+      style={{
+        transition: 'background-color 0.2s ease-in-out',
+        cursor: 'pointer',
+        borderBottom: '1px solid rgba(0,0,0,0.05)'
+      }}
+    >
+      {notification.link ? (
+        <Link 
+          to={notification.link} 
+          className="text-decoration-none text-reset"
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey) return; // Allow opening in new tab
+            e.preventDefault();
+            handleMarkAsRead();
+            // Use a small timeout to allow the click animation to complete
+            setTimeout(() => {
+              window.location.href = notification.link;
+            }, 150);
+          }}
+        >
+          {renderNotificationContent()}
+        </Link>
+      ) : renderNotificationContent()}
+    </ListGroup.Item>
+  );
+});
+
+NotificationItem.propTypes = {
+  notification: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    message: PropTypes.string.isRequired,
+    read: PropTypes.bool.isRequired,
+    type: PropTypes.oneOf(['alert', 'info', 'success', 'warning', '']),
+    sender: PropTypes.shape({
+      name: PropTypes.string,
+      avatar: PropTypes.string
+    }),
+    link: PropTypes.string,
+    createdAt: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date)
+    ]).isRequired
+  }).isRequired,
+  onMarkAsRead: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired
+};
+
+export default NotificationItem;

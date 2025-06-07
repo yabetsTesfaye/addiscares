@@ -1,0 +1,98 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.main-container {
+  min-height: calc(100vh - 56px);
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+.auth-form {
+  max-width: 500px;
+  margin: 60px auto;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  background-color: white;
+}
+
+.dashboard-card {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  transition: transform 0.3s;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+}
+
+.hazard-card {
+  transition: all 0.3s;
+  margin-bottom: 15px;
+}
+
+.hazard-card:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.status-badge {
+  font-size: 0.8rem;
+  padding: 6px 10px;
+}
+
+.pending {
+  background-color: #ffc107;
+}
+
+.in-progress {
+  background-color: #17a2b8;
+}
+
+.resolved {
+  background-color: #28a745;
+}
+
+.escalated {
+  background-color: #dc3545;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unread-notification {
+  background-color: #f8f9fa;
+  border-left: 4px solid #007bff;
+}
+
+.notification-item {
+  cursor: pointer;
+}
+
+.chart-container {
+  height: 350px;
+  margin-bottom: 30px;
+}
